@@ -1,0 +1,10 @@
+# Optional convenience for editor / Lake integration.
+# This project has NO dependencies — every file is pure Lean 4 core and also
+# compiles standalone with `lean File.lean`. Mathlib is deliberately NOT required.
+name = "lean-lukasiewicz"
+defaultTargets = ["Lukasiewicz"]
+
+[[lean_lib]]
+name = "Lukasiewicz"
+# Each source file is a self-contained module with no imports; they can be
+# checked individually (e.g. `lean Soundness.lean`) without building the library.

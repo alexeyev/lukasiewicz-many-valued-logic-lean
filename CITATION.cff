@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+title: >-
+  A Mathlib-free Lean 4 Formalization of MV-algebras and the
+  Soundness of Łukasiewicz / Basic Logic
+message: >-
+  If you use this software or build on the proofs, please cite it
+  using the metadata below.
+type: software
+authors:
+  - family-names: Claude-Opus
+    given-names: Models Family
+  - family-names: Alekseev
+    given-names: Anton
+repository-code: "https://github.com/alexeyev/lukasiewicz-many-valued-logic-lean"
+abstract: >-
+  A from-scratch formalization, in pure Lean 4 core with no Mathlib
+  dependency, of MV-algebras (via Chang's axioms) and the
+  proof systems for Łukasiewicz logic and Hájek's Basic Logic (BL).
+  Includes a complete algebraic soundness proof for all eleven BL
+  axioms over arbitrary MV-algebras (including the prelinearity
+  axiom a6, proved equationally via Mundici's Propositions 1.6 and
+  1.7), the BL+dn vs Łukasiewicz basis equivalence (axioms L1-L4),
+  and the Local Deduction Theorem. Every result depends on at most
+  the standard `propext` axiom; none depends on `sorryAx` or
+  `Classical.choice`.
+keywords:
+  - Lean 4
+  - formal verification
+  - interactive theorem proving
+  - MV-algebras
+  - Łukasiewicz logic
+  - Basic Logic
+  - many-valued logic
+  - fuzzy logic
+  - mathematical logic
+license: Beerware
+version: "1.0.0"
+date-released: "2026-06-18"

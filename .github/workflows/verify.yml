@@ -1,0 +1,48 @@
+name: verify
+
+# Re-checks every proof on each push / PR. Because the sources are pure Lean 4
+# core (no imports, no Mathlib), CI just installs the pinned toolchain and runs
+# `lean` on each file. A clean exit means: no errors and no `sorry`.
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  lean-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install elan (Lean version manager)
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain "$(cat lean-toolchain)"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Lean version
+        run: lean --version
+
+      - name: Type-check every file (silent = no errors, no sorry)
+        run: |
+          set -e
+          for f in MVAlgebra_scratch.lean prop17.lean Soundness.lean Equivalence.lean DeductionBL.lean; do
+            echo "::group::lean $f"
+            lean "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Audit axiom dependencies (must not contain sorryAx)
+        run: |
+          set -e
+          cp Soundness.lean sound_audit.lean
+          printf '\nnamespace Luk.MVAlgebra\n#print axioms sound\nend Luk.MVAlgebra\n' >> sound_audit.lean
+          OUT=$(lean sound_audit.lean)
+          echo "$OUT"
+          if echo "$OUT" | grep -qi "sorryAx"; then
+            echo "FAIL: sound depends on sorryAx"; exit 1
+          fi
+          echo "OK: no sorryAx in sound's axiom closure"
