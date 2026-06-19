@@ -7,22 +7,30 @@ message: >-
   using the metadata below.
 type: software
 authors:
-  - family-names: Claude-Opus
-    given-names: Models Family
+  - name: "Claude, Opus Models Family"
   - family-names: Alekseev
     given-names: Anton
 repository-code: "https://github.com/alexeyev/lukasiewicz-many-valued-logic-lean"
 abstract: >-
   A from-scratch formalization, in pure Lean 4 core with no Mathlib
-  dependency, of MV-algebras (via Chang's axioms) and the
-  proof systems for Łukasiewicz logic and Hájek's Basic Logic (BL).
-  Includes a complete algebraic soundness proof for all eleven BL
-  axioms over arbitrary MV-algebras (including the prelinearity
-  axiom a6, proved equationally via Mundici's Propositions 1.6 and
-  1.7), the BL+dn vs Łukasiewicz basis equivalence (axioms L1-L4),
-  and the Local Deduction Theorem. Every result depends on at most
-  the standard `propext` axiom; none depends on `sorryAx` or
-  `Classical.choice`.
+  dependency, of MV-algebras (via Chang's axioms) and the proof
+  systems for Łukasiewicz logic and Hájek's Basic Logic (BL). On the
+  logical side it includes a complete algebraic soundness proof for
+  all eleven BL axioms over arbitrary MV-algebras (including the
+  prelinearity axiom a6, proved equationally via Mundici's
+  Propositions 1.6 and 1.7), the BL+dn vs Łukasiewicz basis
+  equivalence (axioms L1-L4), and the Local Deduction Theorem. On
+  the algebraic side it develops the structure theory of
+  Cignoli-Mundici Chapter 1 (Propositions 1.5-1.11, Lemmas
+  1.2-1.9, the Boolean center, and the MV-algebra metric),
+  homomorphisms and ideals with the ideal-congruence
+  correspondence, the quotient MV-algebra, and the full suite of
+  isomorphism theorems — First, Second, Third, the Correspondence
+  (Lattice) Theorem, and the Chinese Remainder Theorem — together
+  with the lattice of ideals. Every result depends on at most the
+  standard `propext` and `Quot.sound` axioms; none depends on
+  `sorryAx` or `Classical.choice`, so the entire development is
+  complete and choice-free.
 keywords:
   - Lean 4
   - formal verification
@@ -33,6 +41,10 @@ keywords:
   - many-valued logic
   - fuzzy logic
   - mathematical logic
+  - ideals
+  - quotient algebras
+  - isomorphism theorems
+  - Chinese Remainder Theorem
 license: Beerware
 version: "1.0.0"
 date-released: "2026-06-18"

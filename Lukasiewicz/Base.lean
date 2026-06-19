@@ -471,12 +471,3 @@ theorem a6_key (x y z : A) :
 
 end MVAlgebra
 end Luk
-
-namespace Luk.MVAlgebra
-#print axioms mundici_prop17
-#print axioms mvsup_lub
-#print axioms odot_distrib_mvsup_left
-#print axioms neg_mvsup
-#print axioms neg_mvinf
-#print axioms oplus_distrib_mvinf_left
-end Luk.MVAlgebra

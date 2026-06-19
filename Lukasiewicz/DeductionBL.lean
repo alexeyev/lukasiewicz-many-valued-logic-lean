@@ -65,6 +65,9 @@ theorem mem_insertF_iff (x a : Formula) (Γ : FSet) :
 theorem subset_insertF (a : Formula) (Γ : FSet) : Γ ⊆ᶠ insertF a Γ :=
   fun _ h => Or.inr h
 
+/-- Hilbert-style provability from a finite set of hypotheses `Γ` in BL.
+    `HProvable Γ a` means the formula `a` is derivable from the assumptions in `Γ`
+    using the BL axioms and modus ponens. -/
 inductive HProvable (Γ : FSet) : Formula → Prop
   | hyp {a : Formula}     : a ∈ᶠ Γ → HProvable Γ a
   | id (a : Formula)      : HProvable Γ (a ⇒ a)

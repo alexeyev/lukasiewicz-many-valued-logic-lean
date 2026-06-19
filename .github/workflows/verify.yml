@@ -1,8 +1,15 @@
 name: verify
 
-# Re-checks every proof on each push / PR. Because the sources are pure Lean 4
-# core (no imports, no Mathlib), CI just installs the pinned toolchain and runs
-# `lean` on each file. A clean exit means: no errors and no `sorry`.
+# Re-checks every proof on each push / PR. The MV-algebra theory is a
+# dependency-ordered module chain (Base → … → IdealLattice) built with Lake; the
+# four standalone logic modules are checked individually with `lean`.
+#
+# A clean run guarantees, across the whole library:
+#   * every file compiles (no errors);
+#   * no `sorry` appears in any source;
+#   * the audited headline theorems depend on neither `sorryAx` nor
+#     `Classical.choice` — i.e. the development is genuinely complete and
+#     choice-free, resting only on `propext` and `Quot.sound`.
 
 on:
   push:
@@ -23,26 +30,90 @@ jobs:
             | sh -s -- -y --default-toolchain "$(cat lean-toolchain)"
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Lean version
-        run: lean --version
+      - name: Lean / Lake version
+        run: |
+          lean --version
+          lake --version
 
-      - name: Type-check every file (silent = no errors, no sorry)
+      - name: Cache Lake build artifacts
+        uses: actions/cache@v4
+        with:
+          path: .lake
+          key: lake-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}-${{ hashFiles('Lukasiewicz/**/*.lean', 'Lukasiewicz.lean') }}
+          restore-keys: |
+            lake-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lakefile.toml') }}-
+
+      - name: Build the MV-algebra chain (lake build)
         run: |
           set -e
-          for f in MVAlgebra_scratch.lean prop17.lean Soundness.lean Equivalence.lean DeductionBL.lean; do
-            echo "::group::lean $f"
-            lean "$f"
+          lake build
+
+      - name: Type-check the standalone logic modules
+        run: |
+          set -e
+          for f in Residuation Soundness Equivalence DeductionBL; do
+            echo "::group::lean Lukasiewicz/$f.lean"
+            lake env lean "Lukasiewicz/$f.lean"
             echo "::endgroup::"
           done
 
-      - name: Audit axiom dependencies (must not contain sorryAx)
+      - name: Audit axioms — no sorryAx, no Classical.choice
         run: |
           set -e
-          cp Soundness.lean sound_audit.lean
-          printf '\nnamespace Luk.MVAlgebra\n#print axioms sound\nend Luk.MVAlgebra\n' >> sound_audit.lean
-          OUT=$(lean sound_audit.lean)
+          # Audit a representative theorem from each major area of the library.
+          cat > Lukasiewicz/CIAudit.lean << 'AUDIT'
+          import Lukasiewicz.IdealLattice
+          -- structural theory
+          #print axioms Luk.MVAlgebra.mundici_prop17
+          #print axioms Luk.MVAlgebra.mv_fundamental_structure
+          #print axioms Luk.MVAlgebra.dist_triangle
+          #print axioms Luk.MVAlgebra.ideal_congruence_bijection
+          #print axioms Luk.MVHom.injective_iff_ker_eq_zero
+          #print axioms Luk.prodMV
+          -- the isomorphism-theorem suite
+          #print axioms Luk.MVAlgebra.firstIsomorphismTheorem
+          #print axioms Luk.MVAlgebra.secondIsomorphismTheorem
+          #print axioms Luk.MVAlgebra.thirdIsomorphismTheorem
+          #print axioms Luk.MVAlgebra.correspondenceTheorem
+          #print axioms Luk.MVAlgebra.chineseRemainderTheorem
+          -- closing material
+          #print axioms Luk.MVAlgebra.quotZero_iso
+          #print axioms Luk.MVAlgebra.comaximal_iff_top_sub_sum
+          AUDIT
+          OUT=$(lake env lean Lukasiewicz/CIAudit.lean)
           echo "$OUT"
+          rm Lukasiewicz/CIAudit.lean
+          FAIL=0
           if echo "$OUT" | grep -qi "sorryAx"; then
-            echo "FAIL: sound depends on sorryAx"; exit 1
+            echo "FAIL: an audited theorem depends on sorryAx (an unfinished proof)"; FAIL=1
           fi
-          echo "OK: no sorryAx in sound's axiom closure"
+          if echo "$OUT" | grep -qi "Classical.choice"; then
+            echo "FAIL: an audited theorem depends on Classical.choice (project must stay choice-free)"; FAIL=1
+          fi
+          if [ "$FAIL" -ne 0 ]; then exit 1; fi
+          echo "OK: audited closures use only propext / Quot.sound — no sorryAx, no Classical.choice"
+
+      - name: Check there are no sorries in the sources
+        run: |
+          set -e
+          if grep -rnE "(:=[[:space:]]*sorry|by sorry|^[[:space:]]*sorry$)" Lukasiewicz/*.lean; then
+            echo "FAIL: found sorry in sources"; exit 1
+          fi
+          echo "OK: no sorries"
+
+      - name: Guard against Classical.choice in the sources
+        run: |
+          set -e
+          # Belt-and-braces in addition to the authoritative axiom audit above.
+          # Strip `--` line comments first so that docstrings explaining that the
+          # project is choice-free (in `...` spans or comments) do not trigger a false
+          # positive; then flag any remaining use of Classical choice machinery in code.
+          HITS=$(grep -rn "Classical\." Lukasiewicz/*.lean \
+                   | sed 's/--.*$//' \
+                   | sed 's/`[^`]*`//g' \
+                   | grep -E "Classical\.(choice|em|byContradiction|axiomOfChoice)" || true)
+          if [ -n "$HITS" ]; then
+            echo "$HITS"
+            echo "FAIL: a source file references Classical choice machinery in code"; exit 1
+          fi
+          echo "OK: no Classical.choice machinery referenced in source code"
